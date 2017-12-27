@@ -8,7 +8,7 @@ GEN_H1, GEN_W1 = 4, 4
 GEN_D1, GEN_D2, GEN_D3, GEN_D4, GEN_D5 = 512, 256, 128, 64, 32
 DIS_D1, DIS_D2, DIS_D3, DIS_D4 = 64, 128, 256, 512
 
-BATCH_SIZE, DIS_ITERS, LEARNING_RATE, TRAIN_ITERS = 1, 3, 1e-4, 100000
+BATCH_SIZE, DIS_ITERS, LEARNING_RATE, TRAIN_ITERS = 100, 3, 1e-4, 100000
 EVAL_ROWS, EVAL_COLS, SAMPLES_PATH, EVAL_INTERVAL = 8, 12, './samples', 500
 SAVE_INTERVAL, MODEL_PATH = 10000, './model'
 
@@ -102,20 +102,20 @@ def read_record(filename, batch_size):
 # -------------------------- generator -------------------------
 # ---------------------------------------------------------------
 
-def conv_transpose(x, out_depth, kernel, strides, scope):
+def conv_transpose(x, out_depth, kernel, strides, name):
 
 	in_shape = x.get_shape().as_list()
 	in_batch = tf.shape(x)[0]
 	in_height, in_width, in_depth = in_shape[1:]
 	out_shape = [in_batch, in_height*strides[0], in_width*strides[1], out_depth]
 
-	with tf.variable_scope(scope): 
+	with tf.name_scope(name): 
 
 		w = tf.get_variable('w', shape=[kernel[0], kernel[1], out_depth, in_depth], initializer=tf.truncated_normal_initializer(stddev=0.02))
 		b = tf.get_variable('b', shape=[out_depth], initializer=tf.zeros_initializer())
 
-	conv = tf.nn.conv2d_transpose(x, filter=w, output_shape=out_shape, strides=[1, 2, 2, 1], padding='SAME', name='deconv')
-	conv = tf.add(conv, b, name='add')
+		conv = tf.nn.conv2d_transpose(x, filter=w, output_shape=out_shape, strides=[1, 2, 2, 1], padding='SAME', name='deconv')
+		conv = tf.add(conv, b, name='add')
 
 	return conv	
 
@@ -123,7 +123,7 @@ def gen_conv_block(x, depth, train_logical, scope, final=False):
 
 	with tf.variable_scope(scope): 
 
-		conv = conv_transpose(x, depth, kernel=[5,5], strides=[2,2], scope='conv')
+		conv = conv_transpose(x, depth, kernel=[5,5], strides=[2,2], name='conv')
 
 		if final:
 			act = tf.nn.sigmoid(conv, name='act')
@@ -158,17 +158,17 @@ def lrelu(x, leak, name):
  
 	return tf.maximum(x, leak*x, name=name)
 
-def conv_layer(x, out_depth, kernel, strides, scope):
+def conv_layer(x, out_depth, kernel, strides, name):
 
 	in_depth = x.get_shape()[3]
 
-	with tf.variable_scope(scope): 
+	with tf.name_scope(name): 
 
 		w = tf.get_variable('w',shape=[kernel[0], kernel[1], in_depth, out_depth], initializer=tf.truncated_normal_initializer(stddev=0.02))
 		b = tf.get_variable('b',shape=[out_depth], initializer=tf.zeros_initializer())
 		
-	conv = tf.nn.conv2d(x, filter=w, strides=[1, strides[0], strides[1], 1], padding="SAME", name='conv')
-	conv = tf.add(conv, b, name='add')
+		conv = tf.nn.conv2d(x, filter=w, strides=[1, strides[0], strides[1], 1], padding="SAME", name='conv')
+		conv = tf.add(conv, b, name='add')
 
 	return conv
 
@@ -176,7 +176,7 @@ def dis_conv_block(x, out_depth, train_logical, scope, bn_logical=True):
 
 	with tf.variable_scope(scope): 
 
-		conv=conv_layer(x, out_depth, [5,5], [2,2], 'conv')
+		conv=conv_layer(x, out_depth, [5,5], [2,2], name='conv')
 
 		if bn_logical == True:
 			bn = batch_norm(conv, train_logical=train_logical, epsilon=1e-5, decay = 0.9, scope='bn')
