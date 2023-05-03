@@ -5,7 +5,6 @@ Wasserstein generative adversarial network implementation with Tensorflow.
 <img src="https://github.com/WojciechMormul/gan/blob/master/imgs/houses.bmp" width="800">
 
 ## Usage
-Prepare folder with images of fixed size.
 ```
 git clone https://github.com/WojciechMormul/gan.git
 cd gan
